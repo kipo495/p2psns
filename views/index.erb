@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>簡易SNS</title>
+</head>
+<body>
+  <h1>投稿フォーム</h1>
+  <form action="/post" method="post">
+    ユーザー名: <input type="text" name="user"><br>
+    メッセージ: <input type="text" name="message"><br>
+    <input type="submit" value="投稿">
+  </form>
+
+  <h2>タイムライン</h2>
+  <ul>
+    <% posts.reverse.each do |p| %>
+      <li>
+        <span class="user"><%= p["user"] %></span>:
+        <span class="message"><%= p["message"] %></span><br>
+        <span class="time"><%= p["time"] %></span>
+      </li>
+    <% end %>
+  </ul>
+</body>
+</html>
