@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title><%= title %></title></head>
+<body>
+  <h1><%= title %></h1>
+  <form method="POST" action="<%= action %>">
+  ユーザー名: <input type="text" name="user"><br>
+  パスワード: <input type="password" name="password"><br>
+  <input type="submit" value="<%= submit_label %>">
+  <a href="<%= button %>" type="button"><%= button_label %></a>
+</form>
+</body>
+</html>
