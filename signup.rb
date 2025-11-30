@@ -29,4 +29,21 @@ class Signup
 
   puts "ユーザー #{username} を登録しました！"
   end
+
+  ## ユーザー認証
+  def authenticate_user(username, password)
+  user_dir = "users/#{username}"
+  private_key_file = "#{user_dir}/private.pem"
+
+  return false unless File.exist?(private_key_file)
+
+  encrypted_private_key = File.read(private_key_file)
+
+  begin
+    key = OpenSSL::PKey::RSA.new(encrypted_private_key, password)
+    return true
+  rescue OpenSSL::PKey::RSAError
+    return false
+  end
+end
 end
