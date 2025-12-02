@@ -1,6 +1,6 @@
 require 'webrick'
 require_relative 'routes'
-require_relative 'gossip'
+require_relative 'network'
 
 # コマンドオプション
 port = (ARGV[0] || 8000).to_i
@@ -19,15 +19,6 @@ server = WEBrick::HTTPServer.new(
 Routes.mount(server)
 
 trap("INT") do
-  puts "[DEBUG] received INT, shutting down" if debug
-  if defined?(gossip) && gossip && gossip.respond_to?(:stop)
-    puts "[DEBUG] stopping gossip" if debug
-    begin
-      gossip.stop
-    rescue => e
-      puts "[DEBUG] error stopping gossip: #{e.class} #{e.message}" if debug
-    end
-  end
   server.shutdown
 end
 

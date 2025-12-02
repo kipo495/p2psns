@@ -10,8 +10,8 @@
   <h1 class="mb-4">投稿フォーム</h1>
   <form action="/post" method="post" class="mb-5">
     <div class="mb-3">
-      <label for="user" class="form-label">ユーザー名</label>
-      <input type="text" class="form-control" id="user" name="user">
+      <label for="username" class="form-label">ユーザー名</label>
+      <input type="text" class="form-control" id="username" name="username">
     </div>
     <div class="mb-3">
       <label for="message" class="form-label">メッセージ</label>
@@ -22,9 +22,9 @@
 
   <h2 class="mb-3">タイムライン</h2>
   <ul class="list-group">
-    <% posts.reverse.each do |p| %>
+    <% posts.each do |p| %>
       <li class="list-group-item">
-        <strong class="text-primary"><%= p["user"] %></strong>:
+        <strong class="text-primary"><%= p["username"] || p["user"] %></strong>:
         <span><%= p["message"] %></span><br>
         <small class="text-muted"><%= p["time"] %></small>
       </li>

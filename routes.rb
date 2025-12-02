@@ -1,26 +1,26 @@
 require 'webrick'
 require 'erb'
 require 'json'
+require 'time'
 require 'openssl'
 require 'net/http'
 require_relative 'storage'
 require_relative 'signup'
-require_relative 'gossip'
+require_relative 'network'
 
 class Routes
   def self.mount(server)
-    posts = Storage.load_posts
 
     server.mount_proc '/' do |req, res|
       if req.request_method == 'POST'
-        user = req.query["user"]
+        username = req.query["username"]
         password = req.query["password"]
-        profile_file = "users/#{user}/profile.json"
+        profile_file = "users/#{username}/profile.json"
 
         if File.exist?(profile_file)
           data = JSON.parse(File.read(profile_file))
-          if Signup.new.authenticate_user(user, password)
-            res.cookies << WEBrick::Cookie.new("user", user)
+          if Signup.new.authenticate_user(username, password)
+            res.cookies << WEBrick::Cookie.new("username", username)
             res.set_redirect(WEBrick::HTTPStatus::Found, "/home")
           else
             res.body = "ユーザー名またはパスワードが違います"
@@ -32,7 +32,7 @@ class Routes
         # ログインフォーム表示
         res['Content-Type'] = 'text/html; charset=utf-8'
         title = "ログイン"
-        action = "/login"
+        action = "/"
         submit_label = "ログイン"
         button = "/signup"
         button_label = "新規登録"
@@ -42,12 +42,12 @@ class Routes
 
     server.mount_proc '/signup' do |req, res|
       if req.request_method == 'POST'
-        user = req.query["user"]
+        username = req.query["username"]
         password = req.query["password"]
 
-        if user && password
-          Signup.new.register_user(user, password)
-          res.cookies << WEBrick::Cookie.new("user", user)
+        if username && password
+          Signup.new.register_user(username, password)
+          res.cookies << WEBrick::Cookie.new("username", username)
           res.set_redirect(WEBrick::HTTPStatus::Found, "/home")
         else
           res.body = "ユーザー名とパスワードを入力してください"
@@ -65,57 +65,46 @@ class Routes
     end
 
     server.mount_proc '/home' do |req, res|
-      user_cookie = req.cookies.find { |c| c.name == "user" }
-      if user_cookie
-        user = user_cookie.value
+      username_cookie = req.cookies.find { |c| c.name == "username" }
+      if username_cookie
+        username = username_cookie.value
         res['Content-Type'] = 'text/html; charset=utf-8'
+        # ローカル + リモートを統合してビューに渡す
+        begin
+          posts = (Storage.load_posts + Network.fetch_posts)
+        rescue => e
+          warn "Routes:/home - failed to fetch network posts: #{e.message}"
+          posts = Storage.load_posts
+        end
+        posts = posts.sort_by { |p| Time.parse(p["time"]) rescue p["time"] }.reverse
         res.body = ERB.new(File.read("views/home.erb")).result(binding)
       else
-        res.set_redirect(WEBrick::HTTPStatus::Found, "/login")
+        res.set_redirect(WEBrick::HTTPStatus::Found, "/")
       end
     end
 
     server.mount_proc '/post' do |req, res|
-      event = { "user" => req.query["user"], "message" => req.query["message"], "time" => Time.now.to_s }
-      posts << event
-      Storage.save_posts(posts)
-      # ローカル保存後、他のノードへブロードキャスト
-      Gossip.broadcast({ "type" => "post", "payload" => event })
+      event = { "username" => req.query["username"], "message" => req.query["message"], "time" => Time.now.to_s }
+      # ユーザ別ファイルへ保存
+      Storage.save_post(event)
       res.set_redirect(WEBrick::HTTPStatus::Found, "/home")
     end
 
-    server.mount_proc '/gossip' do |req, res|
-      if req.request_method == 'POST'
+    server.mount_proc '/latest_posts' do |req, res|
+      if req.request_method == 'GET'
+        res['Content-Type'] = 'application/json'
+        local = Storage.load_posts
         begin
-          body = req.body || ''
-          data = JSON.parse(body)
-          puts "[Routes] /gossip received: #{data.inspect}"
-
-          # 期待されるデータ形式に基づいて処理
-          if data["type"] == 'post' && data["payload"]
-            p = data["payload"]
-            if p["user"] && p["message"]
-              posts << { "user" => p["user"], "message" => p["message"], "time" => (p["time"] || Time.now.to_s) }
-              Storage.save_posts(posts)
-              puts "[Routes] /gossip post saved: #{p.inspect}"
-            else
-              puts "[Routes] /gossip post payload missing fields: #{p.inspect}"
-            end
-          end
-
-          res.status = 200
-          res.body = "OK"
-        rescue JSON::ParserError
-          res.status = 400
-          res.body = "invalid json"
+          remote = Network.fetch_posts
         rescue => e
-          res.status = 500
-          res.body = "error"
-          puts "[Routes] /gossip error: #{e.class} #{e.message}\n#{e.backtrace.join("\n")}" 
+          warn "Routes:/latest_posts - failed to fetch remote posts: #{e.message}"
+          remote = []
         end
+        combined = (local + remote).sort_by { |p| Time.parse(p["time"]) rescue p["time"] }.reverse.take(20)
+        res.body = JSON.generate(combined)
       else
         res.status = 405
-        res.body = "method not allowed"
+        res.body = 'method not allowed'
       end
     end
   end
