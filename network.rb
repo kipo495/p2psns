@@ -10,33 +10,29 @@ module Network
     []
   end
 
-  nodes = load_nodes
-
   def self.fetch_posts
+    nodes = load_nodes
     posts = []
     ## 各ノードのエンドポイントにGETしポストを取得
     nodes.each do |node|
       begin
-        uri = URI.join(node, "/latest_posts")
+        uri = URI.join("http://#{node}" "/latest_posts")
         res = Net::HTTP.get_response(uri)
         if res.code == "200"
           data = JSON.parse(res.body)
           posts += data
+          puts posts.value
         end
-      rescue => e
-        warn "Failed to fetch from #{node}: #{e.message}"
+      rescue Errno::ECONNREFUSED, SocketError => e
+        puts "ノード #{uri} に接続できませんでした: #{e.message}"
+      rescue JSON::ParserError => e
+        puts "ノード #{uri} のレスポンスがJSONとして不正: #{e.message}"
+      rescue StandardError => e
+        puts "ノード #{uri} で予期せぬエラー: #{e.class} - #{e.message}"
       end
+
     end
     posts.sort_by { |p| p["time"] }.reverse
     return posts
-  end
-end
-
-class Timeline
-  def self.local
-    posts = Storage.load_posts
-  end
-  def self.global
-    posts = Network.fetch_posts
   end
 end

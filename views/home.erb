@@ -2,36 +2,56 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>簡易SNS</title>
+  <title>P2PSNS</title>
   <!-- Bootstrap CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body class="container my-4">
-  <h1 class="mb-4">投稿フォーム</h1>
-  <form action="/post" method="post" class="mb-5">
-    <div class="mb-3">
-      <label for="username" class="form-label">ユーザー名</label>
-      <input type="text" class="form-control" id="username" name="username">
+<body class="container-fluid my-4">
+  <div class="row">
+    <%# left post form %>
+    <div class="col-1"></div> <!-- spacer -->
+    <div class="col-2">
+      <div class="card">
+        <form method="POST" action="/post">
+          <div class="card-body">
+            <div class="mb-3">
+              <label for="message" class="form-label">新しいポストを作成</label>
+              <textarea class="form-control" id="message" name="message" rows="6"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">投稿</button>
+          </div>
+        </form>
+      </div>
     </div>
-    <div class="mb-3">
-      <label for="message" class="form-label">メッセージ</label>
-      <input type="text" class="form-control" id="message" name="message">
+    <%# center feed %>
+    <div class="col-6">
+      <h2 class="my-4">フィード</h2>
+      <% posts.each do |post| %>
+        <div class="card mb-3">
+          <div class="card-body">
+            <h5 class="card-title"><%= post["username"] %></h5>
+            <p class="card-text"><%= post["message"] %></p>
+          </div>
+        </div>
+      <% end %>
     </div>
-    <button type="submit" class="btn btn-primary">投稿</button>
-  </form>
-
-  <h2 class="mb-3">タイムライン</h2>
-  <ul class="list-group">
-    <% posts.each do |p| %>
-      <li class="list-group-item">
-        <strong class="text-primary"><%= p["username"] || p["user"] %></strong>:
-        <span><%= p["message"] %></span><br>
-        <small class="text-muted"><%= p["time"] %></small>
-      </li>
-    <% end %>
-  </ul>
-
-  <!-- Bootstrap JS (optional for interactivity) -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <%# right navi %>
+    <div class="col-2">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">ナビゲーション</h5>
+          <ul class="list-unstyled">
+          <li><a href="/logout" class="btn btn-secondary">ログアウト</a></li>
+          <li><a href="/login" class="btn btn-secondary">ログイン</a></li>
+          <li><a href="/home" class="btn btn-secondary">ホーム</a></li>
+          <li><a href="/global" class="btn btn-secondary">グローバル</a></li>
+          <li><a href="/settings" class="btn btn-secondary">設定</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-1"></div> <!-- spacer -->
+  </div>
 </body>
+  <%# <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script> %>
 </html>

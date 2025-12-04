@@ -4,9 +4,13 @@ require 'json'
 require 'time'
 require 'openssl'
 require 'net/http'
+require 'securerandom'
 require_relative 'storage'
 require_relative 'signup'
 require_relative 'network'
+
+# グローバルセッションストア（簡易実装）
+$sessions ||= {}
 
 class Routes
   def self.mount(server)
@@ -19,8 +23,15 @@ class Routes
 
         if File.exist?(profile_file)
           data = JSON.parse(File.read(profile_file))
-          if Signup.new.authenticate_user(username, password)
-            res.cookies << WEBrick::Cookie.new("username", username)
+          if Signup.authenticate_user(username, password)
+            # セッション発行
+            session_id = SecureRandom.hex(32)
+            $sessions[session_id] = data
+            cookie = WEBrick::Cookie.new("session_id", session_id)
+            cookie.secure = false
+            cookie.path = "/"
+            cookie.expires = Time.now + 86400
+            res.cookies << cookie
             res.set_redirect(WEBrick::HTTPStatus::Found, "/home")
           else
             res.body = "ユーザー名またはパスワードが違います"
@@ -40,15 +51,37 @@ class Routes
       end
     end
 
+    server.mount_proc '/logout' do |req, res|
+      session_cookie = req.cookies.find { |c| c.name == "session_id" }
+      if session_cookie
+        $sessions.delete(session_cookie.value)
+      end
+      res.set_redirect(WEBrick::HTTPStatus::Found, "/")
+    end
+
     server.mount_proc '/signup' do |req, res|
       if req.request_method == 'POST'
         username = req.query["username"]
         password = req.query["password"]
 
         if username && password
-          Signup.new.register_user(username, password)
-          res.cookies << WEBrick::Cookie.new("username", username)
-          res.set_redirect(WEBrick::HTTPStatus::Found, "/home")
+          user = File.exist?("users/#{username}/profile.json")
+          if !user
+            Signup.register_user(username, password)
+            user_data = JSON.parse(File.read("users/#{username}/profile.json"))
+            session_id = SecureRandom.hex(32) # ランダムなセッションID生成
+            $sessions[session_id] = user_data # セッションとユーザ情報を紐づけ
+            ## セッション-クッキーを生成（ローカル開発のため secure=false）
+            cookie = WEBrick::Cookie.new("session_id", session_id)
+            cookie.secure = false
+            cookie.httponly = true
+            cookie.path = "/"
+            cookie.expires = Time.now + 86400
+            res.cookies << cookie
+            res.set_redirect(WEBrick::HTTPStatus::Found, "/home")
+          else
+            res.body = "ユーザーが既に存在します"
+          end
         else
           res.body = "ユーザー名とパスワードを入力してください"
         end
@@ -65,17 +98,22 @@ class Routes
     end
 
     server.mount_proc '/home' do |req, res|
-      username_cookie = req.cookies.find { |c| c.name == "username" }
-      if username_cookie
-        username = username_cookie.value
+      session_cookie = req.cookies.find { |c| c.name == "session_id" }
+      if session_cookie
         res['Content-Type'] = 'text/html; charset=utf-8'
-        # ローカル + リモートを統合してビューに渡す
-        begin
-          posts = (Storage.load_posts + Network.fetch_posts)
-        rescue => e
-          warn "Routes:/home - failed to fetch network posts: #{e.message}"
-          posts = Storage.load_posts
-        end
+        posts = Storage.load_posts
+        posts = posts.sort_by { |p| Time.parse(p["time"]) rescue p["time"] }.reverse
+        res.body = ERB.new(File.read("views/home.erb")).result(binding)
+      else
+        res.set_redirect(WEBrick::HTTPStatus::Found, "/")
+      end
+    end
+
+    server.mount_proc '/global' do |req, res|
+      session_cookie = req.cookies.find { |c| c.name == "session_id" }
+      if session_cookie
+        res['Content-Type'] = 'text/html; charset=utf-8'
+        posts = Network.fetch_posts
         posts = posts.sort_by { |p| Time.parse(p["time"]) rescue p["time"] }.reverse
         res.body = ERB.new(File.read("views/home.erb")).result(binding)
       else
@@ -84,24 +122,29 @@ class Routes
     end
 
     server.mount_proc '/post' do |req, res|
-      event = { "username" => req.query["username"], "message" => req.query["message"], "time" => Time.now.to_s }
+      session_cookie = req.cookies.find { |c| c.name == "session_id" }
+      username = nil
+      if session_cookie
+        sess = $sessions[session_cookie.value]
+        username = sess && sess["username"]
+      end
+      event = { "username" => username, "message" => req.query["message"], "time" => Time.now.to_s }
       # ユーザ別ファイルへ保存
       Storage.save_post(event)
-      res.set_redirect(WEBrick::HTTPStatus::Found, "/home")
+      referer = req.header["referer"]&.first
+      if referer
+        res.set_redirect(WEBrick::HTTPStatus::Found, referer)
+      else
+        res.set_redirect(WEBrick::HTTPStatus::Found, "/home")
+      end
     end
 
     server.mount_proc '/latest_posts' do |req, res|
       if req.request_method == 'GET'
         res['Content-Type'] = 'application/json'
         local = Storage.load_posts
-        begin
-          remote = Network.fetch_posts
-        rescue => e
-          warn "Routes:/latest_posts - failed to fetch remote posts: #{e.message}"
-          remote = []
-        end
-        combined = (local + remote).sort_by { |p| Time.parse(p["time"]) rescue p["time"] }.reverse.take(20)
-        res.body = JSON.generate(combined)
+        local = local.sort_by { |p| Time.parse(p["time"]) rescue p["time"] }.reverse.take(20)
+        res.body = JSON.generate(local)
       else
         res.status = 405
         res.body = 'method not allowed'
