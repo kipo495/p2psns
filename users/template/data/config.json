@@ -1,1 +1,11 @@
-[]
+{
+    "theme": "default",
+    "layout": "default",
+    "showMedia": true,
+    "fontSize": "medium",
+    "notifications": {
+        "enable": true,
+        "enableOnDesktop": true
+    },
+    "visibility": "public"
+}

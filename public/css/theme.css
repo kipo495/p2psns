@@ -1,0 +1,199 @@
+/* Theme CSS for p2psns */
+/* Supports: default (white), dark (black) */
+
+/* ============================================================================
+   Default Theme (White/Light)
+   =========================================================================== */
+body.theme-default {
+    --bs-body-bg: #ffffff;
+    --bs-body-color: #212529;
+    --bs-card-bg: #f8f9fa;
+    --bs-card-border-color: #dee2e6;
+    --bs-border-color: #dee2e6;
+    --bs-form-control-bg: #ffffff;
+    --bs-form-control-border-color: #dee2e6;
+    --bs-nav-link-color: #212529;
+    --bs-link-color: #0d6efd;
+}
+
+/* ============================================================================
+   Dark Theme (Black)
+   =========================================================================== */
+body.theme-dark {
+    --bs-body-bg: #1a1a1a;
+    --bs-body-color: #e9ecef;
+    --bs-card-bg: #2d2d2d;
+    --bs-card-border-color: #404040;
+    --bs-border-color: #404040;
+    --bs-form-control-bg: #3a3a3a;
+    --bs-form-control-border-color: #555555;
+    --bs-form-control-color: #e9ecef;
+    --bs-nav-link-color: #e9ecef;
+    --bs-link-color: #0dcaf0;
+}
+
+/* ============================================================================
+   Font Size Variations
+   =========================================================================== */
+body.font-small {
+    font-size: 0.875rem;
+}
+
+body.font-medium {
+    font-size: 1rem;
+}
+
+body.font-large {
+    font-size: 1.125rem;
+}
+
+/* ============================================================================
+   Layout Variations
+   =========================================================================== */
+body.layout-compact .card {
+    margin-bottom: 0.5rem;
+}
+
+body.layout-compact .container-fluid {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+body.layout-advanced .col-2 {
+    flex: 0 0 auto;
+    width: 18%;
+}
+
+/* ============================================================================
+   Dark Theme - Specific Adjustments
+   =========================================================================== */
+body.theme-dark {
+    background-color: #1a1a1a;
+    color: #e9ecef;
+}
+
+body.theme-dark .card {
+    background-color: #2d2d2d;
+    border-color: #404040;
+    color: #e9ecef;
+}
+
+body.theme-dark .card-header {
+    background-color: #252525;
+    border-color: #404040;
+}
+
+body.theme-dark .form-control,
+body.theme-dark .form-select {
+    background-color: #3a3a3a;
+    color: #e9ecef;
+    border-color: #555555;
+}
+
+body.theme-dark .form-control:focus,
+body.theme-dark .form-select:focus {
+    background-color: #3a3a3a;
+    color: #e9ecef;
+    border-color: #0dcaf0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.25);
+}
+
+body.theme-dark .btn-secondary {
+    background-color: #404040;
+    border-color: #555555;
+}
+
+body.theme-dark .btn-secondary:hover {
+    background-color: #505050;
+    border-color: #666666;
+}
+
+body.theme-dark a {
+    color: #0dcaf0;
+}
+
+body.theme-dark a:hover {
+    color: #31d5ff;
+}
+
+/* ============================================================================
+   Default Theme - Specific Adjustments
+   =========================================================================== */
+body.theme-default {
+    background-color: #ffffff;
+    color: #212529;
+}
+
+body.theme-default .card {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #212529;
+}
+
+body.theme-default .card-header {
+    background-color: #f1f3f5;
+    border-color: #dee2e6;
+}
+
+body.theme-default .form-control,
+body.theme-default .form-select {
+    background-color: #ffffff;
+    color: #212529;
+    border-color: #dee2e6;
+}
+
+body.theme-default .form-control:focus,
+body.theme-default .form-select:focus {
+    background-color: #ffffff;
+    color: #212529;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 111, 253, 0.25);
+}
+
+body.theme-default .btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+body.theme-default .btn-secondary:hover {
+    background-color: #5c636a;
+    border-color: #565e64;
+}
+
+body.theme-default a {
+    color: #0d6efd;
+}
+
+body.theme-default a:hover {
+    color: #0b5ed7;
+}
+
+/* ============================================================================
+   Shared Styles
+   =========================================================================== */
+body {
+    /* Apply theme variables (set by body.theme-*) */
+    background-color: var(--bs-body-bg, #ffffff);
+    color: var(--bs-body-color, #212529);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.card {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.form-control,
+.form-select {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* List styling for navigation */
+.list-unstyled li {
+    margin-bottom: 0.5rem;
+}
+
+/* Button full width in cards */
+.card .btn {
+    width: 100%;
+    margin-bottom: 0.25rem;
+}

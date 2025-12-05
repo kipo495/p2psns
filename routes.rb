@@ -19,7 +19,7 @@ class Routes
       if req.request_method == 'POST'
         username = req.query["username"]
         password = req.query["password"]
-        profile_file = "users/#{username}/profile.json"
+        profile_file = "users/#{username}/data/profile.json"
 
         if File.exist?(profile_file)
           data = JSON.parse(File.read(profile_file))
@@ -54,6 +54,7 @@ class Routes
     server.mount_proc '/logout' do |req, res|
       session_cookie = req.cookies.find { |c| c.name == "session_id" }
       if session_cookie
+        session_cookie.expires = Time.now - 3600
         $sessions.delete(session_cookie.value)
       end
       res.set_redirect(WEBrick::HTTPStatus::Found, "/")
@@ -65,16 +66,15 @@ class Routes
         password = req.query["password"]
 
         if username && password
-          user = File.exist?("users/#{username}/profile.json")
+          user = File.exist?("users/#{username}/data/profile.json")
           if !user
             Signup.register_user(username, password)
-            user_data = JSON.parse(File.read("users/#{username}/profile.json"))
+            user_data = JSON.parse(File.read("users/#{username}/data/profile.json"))
             session_id = SecureRandom.hex(32) # ランダムなセッションID生成
             $sessions[session_id] = user_data # セッションとユーザ情報を紐づけ
-            ## セッション-クッキーを生成（ローカル開発のため secure=false）
+            ## セッション-クッキーを生成
             cookie = WEBrick::Cookie.new("session_id", session_id)
             cookie.secure = false
-            cookie.httponly = true
             cookie.path = "/"
             cookie.expires = Time.now + 86400
             res.cookies << cookie
@@ -99,8 +99,12 @@ class Routes
 
     server.mount_proc '/home' do |req, res|
       session_cookie = req.cookies.find { |c| c.name == "session_id" }
-      if session_cookie
+      sess = $sessions[session_cookie.value]
+      if session_cookie && sess
         res['Content-Type'] = 'text/html; charset=utf-8'
+        username = sess["username"]
+        config = JSON.parse(File.read("./users/#{username}/data/config.json"))
+        theme = config['theme']
         posts = Storage.load_posts
         posts = posts.sort_by { |p| Time.parse(p["time"]) rescue p["time"] }.reverse
         res.body = ERB.new(File.read("views/home.erb")).result(binding)
@@ -111,8 +115,12 @@ class Routes
 
     server.mount_proc '/global' do |req, res|
       session_cookie = req.cookies.find { |c| c.name == "session_id" }
-      if session_cookie
+      sess = $sessions[session_cookie.value]
+      if session_cookie && sess
         res['Content-Type'] = 'text/html; charset=utf-8'
+        username = sess["username"]
+        config = JSON.parse(File.read("./users/#{username}/data/config.json"))
+        theme = config['theme']
         posts = Network.fetch_posts
         posts = posts.sort_by { |p| Time.parse(p["time"]) rescue p["time"] }.reverse
         res.body = ERB.new(File.read("views/home.erb")).result(binding)
@@ -123,10 +131,9 @@ class Routes
 
     server.mount_proc '/post' do |req, res|
       session_cookie = req.cookies.find { |c| c.name == "session_id" }
-      username = nil
-      if session_cookie
-        sess = $sessions[session_cookie.value]
-        username = sess && sess["username"]
+      sess = $sessions[session_cookie.value]
+      if session_cookie && sess
+        username = sess["username"]
       end
       event = { "username" => username, "message" => req.query["message"], "time" => Time.now.to_s }
       # ユーザ別ファイルへ保存
@@ -148,6 +155,37 @@ class Routes
       else
         res.status = 405
         res.body = 'method not allowed'
+      end
+    end
+
+    server.mount_proc '/config' do |req, res|
+      session_cookie = req.cookies.find { |c| c.name == "session_id" }
+      sess = $sessions[session_cookie.value]
+      if session_cookie && sess
+        username = sess["username"]
+        if req.request_method == 'POST'
+          # フォームデータから changes オブジェクトを構築
+          changes = {
+            "theme" => req.query["theme"],
+            "layout" => req.query["layout"],
+            "fontSize" => req.query["fontSize"],
+            "showMedia" => req.query["showMedia"],
+            "notifications" => {
+              "enable" => req.query["notifications_enable"],
+              "enableOnDesktop" => req.query["notifications_enableOnDesktop"]
+            },
+            "visibility" => req.query["visibility"]
+          }
+          Storage.save_config(username, changes)
+          res.set_redirect(WEBrick::HTTPStatus::Found, "/config")
+        else
+          # GET リクエスト: 設定ページを表示
+          res['Content-Type'] = 'text/html; charset=utf-8'
+          config = Storage.load_config(username)
+          res.body = ERB.new(File.read("views/config.erb")).result(binding)
+        end
+      else
+        res.set_redirect(WEBrick::HTTPStatus::Found, "/")
       end
     end
   end

@@ -16,6 +16,9 @@ server = WEBrick::HTTPServer.new(
   :Logger => webrick_logger
 )
 
+## テーマCSSなど
+server.mount('/public', WEBrick::HTTPServlet::FileHandler, File.expand_path('public', __dir__))
+
 Routes.mount(server)
 
 trap("INT") do

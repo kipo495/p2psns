@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>設定</title>
+  <!-- Bootstrap CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Custom Theme CSS -->
+  <link href="/public/css/theme.css" rel="stylesheet">
+</head>
+<body class="theme-<%= config['theme'] || 'default' %> font-<%= config['fontSize'] || 'medium' %> layout-<%= config['layout'] || 'default' %>">
+  <div class="container my-4">
+    <h1 class="mb-4">設定</h1>
+  
+    <div class="card">
+    <div class="card-header">
+      <h5 class="mb-0">表示設定</h5>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="/config" class="mt-3">
+        
+        <!-- テーマ設定 -->
+        <div class="mb-3">
+          <label for="theme" class="form-label">テーマ</label>
+          <select class="form-select" id="theme" name="theme">
+            <option value="default" <%= 'selected' if config['theme'] == 'default' %>>デフォルト</option>
+            <option value="dark" <%= 'selected' if config['theme'] == 'dark' %>>ダーク</option>
+            <option value="light" <%= 'selected' if config['theme'] == 'light' %>>ライト</option>
+          </select>
+        </div>
+
+        <!-- レイアウト設定 -->
+        <div class="mb-3">
+          <label for="layout" class="form-label">レイアウト</label>
+          <select class="form-select" id="layout" name="layout">
+            <option value="default" <%= 'selected' if config['layout'] == 'default' %>>デフォルト</option>
+            <option value="advanced" <%= 'selected' if config['layout'] == 'advanced' %>>アドバンスド</option>
+          </select>
+        </div>
+
+        <!-- フォントサイズ設定 -->
+        <div class="mb-3">
+          <label for="fontSize" class="form-label">フォントサイズ</label>
+          <select class="form-select" id="fontSize" name="fontSize">
+            <option value="small" <%= 'selected' if config['fontSize'] == 'small' %>>小</option>
+            <option value="medium" <%= 'selected' if config['fontSize'] == 'medium' %>>中</option>
+            <option value="large" <%= 'selected' if config['fontSize'] == 'large' %>>大</option>
+          </select>
+        </div>
+
+        <!-- メディア表示設定 -->
+        <div class="mb-3 form-check">
+          <input type="checkbox" class="form-check-input" id="showMedia" name="showMedia" value="true" <%= 'checked' if config['showMedia'] %>>
+          <label class="form-check-label" for="showMedia">
+            メディアを表示
+          </label>
+        </div>
+
+        <!-- 通知設定 -->
+        <div class="card mt-3 mb-3">
+          <div class="card-header">
+            <h6 class="mb-0">通知設定</h6>
+          </div>
+          <div class="card-body">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="notificationsEnable" name="notifications_enable" value="true" <%= 'checked' if config.dig('notifications', 'enable') %>>
+              <label class="form-check-label" for="notificationsEnable">
+                通知を有効にする
+              </label>
+            </div>
+            <div class="form-check mt-2">
+              <input type="checkbox" class="form-check-input" id="notificationsDesktop" name="notifications_enableOnDesktop" value="true" <%= 'checked' if config.dig('notifications', 'enableOnDesktop') %>>
+              <label class="form-check-label" for="notificationsDesktop">
+                デスクトップ通知を有効にする
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 公開範囲設定 -->
+        <div class="mb-3">
+          <label for="visibility" class="form-label">プロフィール公開範囲</label>
+          <select class="form-select" id="visibility" name="visibility">
+            <option value="public" <%= 'selected' if config['visibility'] == 'public' %>>公開</option>
+            <option value="friends" <%= 'selected' if config['visibility'] == 'friends' %>>フレンドのみ</option>
+            <option value="private" <%= 'selected' if config['visibility'] == 'private' %>>非公開</option>
+          </select>
+        </div>
+
+        <div class="mt-4">
+          <button type="submit" class="btn btn-primary">保存</button>
+          <a href="/home" class="btn btn-secondary">戻る</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </div>
+</body>
+</html>
+</html>

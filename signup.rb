@@ -23,10 +23,9 @@ module Signup
     profile = {
       "username" => username,
       "public_key" => public_key,
-      "password" => password
     }
     begin
-      File.write("#{user_dir}/profile.json", JSON.pretty_generate(profile))
+      File.write("#{user_dir}/data/profile.json", JSON.pretty_generate(profile))
     rescue => e
       warn "Signup: failed to write profile for #{username}: #{e.message}"
       raise
